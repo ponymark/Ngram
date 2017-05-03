@@ -71,19 +71,23 @@ namespace ConsoleApplication1
                 .Select(l => l.Split('~'))//抓到key value
                 .ToDictionary(a => a[0], a =>  Int32.Parse(a[1]));//轉成新字典
             double prolog = 0;
+            Console.WriteLine("{0,-20}{1,-20}", "word", "Log10 probability");
             for(int i=0;i<hh.Length;i++)
             {
+                double temp2 = 0;
                 int actualValue = 0;
                 if (!res.TryGetValue(hh[i], out actualValue))
                 {
-                    prolog += Math.Log10((double)(1) / (double)(num+res.Count));
+                    temp2 += Math.Log10((double)(1) / (double)(num + res.Count));
                 }
                 else
                 {
-                    prolog += Math.Log10((double)(res[hh[i]]+1) / (double)(num + res.Count));
+                    temp2 += Math.Log10((double)(res[hh[i]] + 1) / (double)(num + res.Count));
                 }
+                prolog += temp2;
+                Console.WriteLine("{0,-20}{1,-20}", hh[i], temp2);
             }
-            Console.WriteLine("機率(log10)為:{0}", prolog);
+            Console.WriteLine("\n{0,-30}{1,-3}{2,-30}\n", "The sum of all probabilities",":", prolog);
         }
 
         static void pre() //前置處理 產生單字出現次數 總字數
