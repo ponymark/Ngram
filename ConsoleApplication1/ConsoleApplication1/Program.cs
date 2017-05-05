@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
+using System.Text.RegularExpressions;
+
 
 namespace ConsoleApplication1
 {
@@ -52,8 +54,7 @@ namespace ConsoleApplication1
 
                 if (s != "-1")
                 {
-                    string[] hh = s.Split(' ');
-                    unigram(hh);
+                    unigram(s);
                 }
                 else 
                 {
@@ -62,8 +63,31 @@ namespace ConsoleApplication1
             }
         }
 
-        static void unigram(string [] hh)
+        static void unigram(string  hh)
         {
+            string pattern = @"[^\"" ]+(?=\;\ |\:\ |\,\""|\.\""|\!\""|\?\""|,\ |\.\ |\.$|\.\n)|(?<=\ )[^\"" ]+(?=\ )|(?<=\"")[^\"" ]+(?=\ )|(?<= )[^\"" ]+(?=\"")|^[^\"" ]+(?=\ )|[\.,\?\!\""\:\;]|(?<=\"")[^ \""]+(?=\"")|(?<=\n)[^ \""]+(?=\ )";
+            //[^" ]+(?=\;\ |\:\ |\,"|\."|\!"|\?"|,\ |\.\ |\.$|\.\n)
+            //
+            //|(?<=\ )[^" ]+(?=\ )|(?<=")[^" ]+(?=\ )
+            //
+            //|(?<= )[^" ]+(?=")|^[^" ]+(?=\ )
+            //
+            //|[\.,\?\!"\:\;]
+            //
+            //|(?<=")[^ "]+(?=")
+            //
+            //|(?<=\n)[^ "]+(?=\ )
+
+            int testwordcount = 0;
+            string[] testword=new string[10000];
+            foreach (Match m in Regex.Matches(hh, pattern))
+            {
+                testword[testwordcount] = m.Value;
+                testwordcount++;
+            
+            }
+
+
             string[] temp = File.ReadAllLines(@"..\..\num.txt");
             int num =  Int32.Parse(temp[0]);
             var res = File
@@ -71,27 +95,29 @@ namespace ConsoleApplication1
                 .Select(l => l.Split('~'))//抓到key value
                 .ToDictionary(a => a[0], a =>  Int32.Parse(a[1]));//轉成新字典
             double prolog = 0;
-            Console.WriteLine("{0,-20}{1,-20}", "word", "Log10 probability");
-            for(int i=0;i<hh.Length;i++)
+            Console.WriteLine("\n{0,-100}{1,-100}\n\n", "word", "Log10 probability");
+            for (int i = 0; i < testwordcount; i++)
             {
                 double temp2 = 0;
                 int actualValue = 0;
-                if (!res.TryGetValue(hh[i], out actualValue))
+                if (!res.TryGetValue(testword[i], out actualValue))
                 {
                     temp2 += Math.Log10((double)(1) / (double)(num + res.Count));
                 }
                 else
                 {
-                    temp2 += Math.Log10((double)(res[hh[i]] + 1) / (double)(num + res.Count));
+                    temp2 += Math.Log10((double)(res[testword[i]] + 1) / (double)(num + res.Count));
                 }
                 prolog += temp2;
-                Console.WriteLine("{0,-20}{1,-20}", hh[i], temp2);
+                Console.WriteLine("{0,-100}{1,-100}", testword[i], temp2);
             }
-            Console.WriteLine("\n{0,-30}{1,-3}{2,-30}\n", "The sum of all probabilities",":", prolog);
+            Console.WriteLine("\n{0,-100}{1,-100}\n\n", "The sum of all probabilities", prolog);
         }
 
         static void pre() //前置處理 產生單字出現次數 總字數
         {
+            string pattern = @"[^\"" ]+(?=\;\ |\:\ |\,\""|\.\""|\!\""|\?\""|,\ |\.\ |\.$|\.\n)|(?<=\ )[^\"" ]+(?=\ )|(?<=\"")[^\"" ]+(?=\ )|(?<= )[^\"" ]+(?=\"")|^[^\"" ]+(?=\ )|[\.,\?\!\""\:\;]|(?<=\"")[^ \""]+(?=\"")|(?<=\n)[^ \""]+(?=\ )";
+
             string[] lines = System.IO.File.ReadAllLines(@"..\..\ohsumed.87");
             int status = 0; int cou = -1;
             article[] tt = new article[54710];
@@ -172,28 +198,29 @@ namespace ConsoleApplication1
                     var dicttemp = new Dictionary<string, int>();
                     for (int j = st; j < ed; j++)
                     {
-                        string[] ttt = tt[j].w.Split(' ');//這裡要在下好一點 試著加入regex
-                        wordcount[st / 13678] += ttt.Length;//算總字數
-                        foreach (string test in ttt)//算字詞出現次數
+                        if (tt[j].w != "") 
                         {
-                            if (st / 13678 == 0)
+                            foreach (Match m in Regex.Matches(tt[j].w, pattern))
                             {
-                                a1(dict1, test);
-                            }
-                            else if (st / 13678 == 1)
-                            {
-                                a1(dict2, test);
-                            }
-                            else if (st / 13678 == 2)
-                            {
-                                a1(dict3, test);
-                            }
-                            else if (st / 13678 == 3)
-                            {
-                                a1(dict4, test);
-                            }
+                                wordcount[st / 13678] ++;//算總字數
+                                if (st / 13678 == 0)
+                                {
+                                    a1(dict1, m.Value);
+                                }
+                                else if (st / 13678 == 1)
+                                {
+                                    a1(dict2, m.Value);
+                                }
+                                else if (st / 13678 == 2)
+                                {
+                                    a1(dict3, m.Value);
+                                }
+                                else if (st / 13678 == 3)
+                                {
+                                    a1(dict4, m.Value);
+                                }
+                            } 
                         }
-
                     }
 
 
@@ -210,6 +237,7 @@ namespace ConsoleApplication1
 
             var result = dict1.Concat(dict2).Concat(dict3).Concat(dict4)//串聯分工結果
                 .GroupBy(d => d.Key)//依照key GroupBy合併value
+                .OrderBy(d => d.Key)
                 .ToDictionary(d => d.Key, d => d.First().Value);//轉換成新的字典
             //合併字詞出現次數工作成果
             
